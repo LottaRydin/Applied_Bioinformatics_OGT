@@ -37,7 +37,7 @@ with Session(API_BASE) as session:
     # Iterating through samples from salt marshes (enviroment) with temperature data availible
     for sample in session.iterate('biomes/root:Environmental:Aquatic:Marine:Intertidal zone:Salt marsh/samples', f):
         count += 1
-        print("sample:", sample.accession, ", count: ", count)
+        #print("sample:", sample.accession, ", count: ", count)
     # if True:
     #     sample = session.get('samples', "SRS373032").resource    
 
@@ -47,11 +47,13 @@ with Session(API_BASE) as session:
         best_analysis = None
 
         for run in sample.runs:
-            print("run acc: ", run.accession, "pipeline: ", [p.release_version for p in run.pipelines], "experiment type: ", run.experiment_type)
+            #print("run acc: ", run.accession, "pipeline: ", [p.release_version for p in run.pipelines], "experiment type: ", run.experiment_type)
+            
             pipelines_used = [p.release_version for p in run.pipelines]
             if '4.1' in pipelines_used and run.experiment_type == 'amplicon':
                 for analysis in run.analyses:
-                    print(f'ananlysis acc: {analysis.accession}, analysis pipeline: {analysis.pipeline_version}') #, analysis sum: {analysis.analysis_summary}')
+                    #print(f'ananlysis acc: {analysis.accession}, analysis pipeline: {analysis.pipeline_version}') #, analysis sum: {analysis.analysis_summary}')
+                    
                     for e in analysis.analysis_summary:
                         if e['key'] == 'Reads with predicted RNA' and analysis.pipeline_version == '4.1':
                             if int(e['value']) >= best_run_val:
@@ -61,7 +63,7 @@ with Session(API_BASE) as session:
             else:
                 print("------------------NO GOOD PIPELINE/EXP TYPE---------------------")
             
-        print(f"best run: {best_run}, {best_run_val} in analysis: {best_analysis}")
+        #print(f"best run: {best_run}, {best_run_val} in analysis: {best_analysis}")
 
         # Download TSV file for the best analysis:
         if best_analysis == None:
@@ -74,16 +76,17 @@ with Session(API_BASE) as session:
 
             # this will iterate over the download files from the API for the analysis
             # and will download only the otu tsv file.
-            print(API_BASE + "/" + RESOURCE + "/" + ANALYSIS_ACCESSION + "/downloads")
+            #print(API_BASE + "/" + RESOURCE + "/" + ANALYSIS_ACCESSION + "/downloads")
             for download in session.iterate(RESOURCE + "/" + ANALYSIS_ACCESSION + "/downloads"):
                 # print(f'download alias: {download.alias}')
 
                 if "FASTQ_SSU_OTU.tsv" in download.alias: # Only download tsv file
-                    output_file = os.path.join("tsv_files", sample.accession + "_" + download.alias + ".tsv")
+                    output_file = os.path.join("tsv_files", sample.accession + ".tsv")
                     if os.path.exists(output_file):
-                        print("Already downloaded: " + download.alias)
+                        #print("Already downloaded: " + download.alias)
                         continue
-                    print("Downloading: " + download.alias)
+                    #print("Downloading: " + download.alias)
+
                     with requests.get(download.links.self) as response:
                         response.raise_for_status()
                         with open(output_file, "wb") as f:

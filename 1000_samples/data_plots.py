@@ -11,26 +11,25 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 tempura_otu_df = pd.read_csv("matched_temp_multi_v2.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id"])
+
 metadata = pd.read_csv('temp_samples.tsv', sep='\t') #specify metadata file
 metadata = metadata.drop(columns=['Unnamed: 0']) #drop unnecessary col
+
+pipeline_map = pd.read_csv('both_pipes.tsv', sep='\t')
+#pipeline_map = pipeline_map.set_index(["OTU_id_5"]) #set OTU col as the index
+
 tempura = pd.read_csv("TEMPURA.csv") #load all tempura data
 
-
 df = pd.read_csv("data_whole.tsv", sep='\t') #compile_data_medium.py output
-df1 = df
-
-
-
-
-#convert pipeline 5 otu id to pieline 4.1 otu
-#df.loc[df.pipeline == 5, 'OTU_ID'] = tempura_otu_df.loc[tempura_otu_df.OTU_id_5==df["OTU_ID"].values[0], 'OTU_id_4_1'].values[0]
-
-
-
-
-
-
-
+#which v5 otu not in pipeline_map, remove this data
+list_1 = pipeline_map.OTU_id_5.tolist() #all v5 otu id in map file
+list_2 = df.loc[df.pipeline == 5, :].OTU_ID.unique() #list of v5 otu from tsv files
+missing_v5_id = list(set(list_2).difference(list_1))
+df = df.drop(df[(df['pipeline'] == 5) & (df['OTU_ID'].isin(missing_v5_id))].index) #removed 400 rows because no mtching v5 otu id in the map
+#not convert v5 otu id to v4.1
+otu_dict = dict(zip(pipeline_map.OTU_id_5, pipeline_map.OTU_id_4_1))
+df.loc[df.pipeline == 5, 'OTU_ID'] = df['OTU_ID'].map(otu_dict)
+#df_5 = df.loc[df.pipeline == 5, :]
 df = df.set_index(["OTU_ID"]) #set OTU col as the index
 df.sort_index(inplace=True) #sort dataframe based on increasing index values
 
@@ -38,7 +37,6 @@ df.index.unique("OTU_ID") #unique OTU ID indices from the appended_df
 df.groupby(level="OTU_ID").size() #count data samples per OTU, pandas series output
 Counter(df.groupby(level="OTU_ID").size().tolist()) #how many OTUs have 1 data pt, 2 etc
 
-#filtering
 #filter out eukaryotes
 df = df[~df.taxonomy.str.contains("Eukaryota")]
 
@@ -83,23 +81,7 @@ ax = sns.violinplot(x="taxonomy", y="temp", data=plot_df, scale="count", inner="
 ax.tick_params(axis='x', rotation=90)
 
 ##############################################################################
-
 len(list(set(df.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id"))))
-df.loc[df.pipeline == 4.1].index.unique("OTU_ID")
-tempura_otu_df.OTU_id_4_1
-
-#len(list(set(df.loc[df.pipeline == 4.1].index.unique("OTU_ID") & set(tempura_otu_df.index.unique("OTU_id"))))
-
-
-#for otu in df.index.unique("OTU_ID"):
-#    if df.loc[OTU_nr, :].pipeline.values[0] == 4.1:
-        
-
-
-
-
-
-
 
 def tempura_and_prediction(OTU_nr):
     plt.figure()
@@ -144,6 +126,10 @@ plt.show()
 #tempura_ratio[tempura_ratio < 0] #how many ratios below 0, so that Topt is below Tmax
 #tempura_ratio[(tempura_ratio > 0) & (tempura_ratio < 0.1)] #Topt very close to Tmin
 ###############################################################################
+OTU_size.plot(kind='hist', bins=20, rwidth=0.9, color='#014d4e', \
+              title = "Number of observations of OTU" )
+plt.xlabel("observation nr")
+plt.show()
 
 metadata.temperature.plot(kind='hist', bins=20, rwidth=0.9, color='#ae7181', \
                           title = "Temperatures of all samples" )
@@ -155,10 +141,6 @@ df.temp.plot(kind='hist', bins=20, rwidth=0.9, color='#607c8e', \
 plt.xlabel("temperature")
 plt.show()
 
-OTU_size.plot(kind='hist', bins=20, rwidth=0.9, color='#014d4e', \
-              title = "Number of bservations of OTU" )
-plt.xlabel("observation nr")
-plt.show()
 ###############################################################################
 
 cols = ['OTU_ID', 'Tmin', 'Topt', 'Tmax']
@@ -191,6 +173,24 @@ regression["temp_Tmax"] = regression["temp_Tmax"].astype(float, errors = 'raise'
 from sklearn.linear_model import LinearRegression
 X = regression.Topt.values.reshape(-1, 1)
 Y = regression.temp_Topt.values.reshape(-1, 1)
+linear_regressor = LinearRegression()  # create object for the class
+linear_regressor.fit(X, Y)  # perform linear regression
+Y_pred = linear_regressor.predict(X)  # make predictions
+plt.scatter(X, Y)
+plt.plot(X, Y_pred, color='red')
+plt.show()
+
+X = regression.Tmin.values.reshape(-1, 1)
+Y = regression.temp_Tmin.values.reshape(-1, 1)
+linear_regressor = LinearRegression()  # create object for the class
+linear_regressor.fit(X, Y)  # perform linear regression
+Y_pred = linear_regressor.predict(X)  # make predictions
+plt.scatter(X, Y)
+plt.plot(X, Y_pred, color='red')
+plt.show()
+
+X = regression.Tmax.values.reshape(-1, 1)
+Y = regression.temp_Tmax.values.reshape(-1, 1)
 linear_regressor = LinearRegression()  # create object for the class
 linear_regressor.fit(X, Y)  # perform linear regression
 Y_pred = linear_regressor.predict(X)  # make predictions

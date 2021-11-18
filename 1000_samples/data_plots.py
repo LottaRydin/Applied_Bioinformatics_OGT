@@ -8,14 +8,31 @@ from collections import Counter
 
 #load data
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
-df = pd.read_csv("data_whole.tsv", sep='\t') #compile_data_medium.py output
-df = df.set_index(["OTU_ID"]) #set OTU col as the index
-df.sort_index(inplace=True) #sort dataframe based on increasing index values
+
 tempura_otu_df = pd.read_csv("matched_temp_multi_v2.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id"])
 metadata = pd.read_csv('temp_samples.tsv', sep='\t') #specify metadata file
 metadata = metadata.drop(columns=['Unnamed: 0']) #drop unnecessary col
 tempura = pd.read_csv("TEMPURA.csv") #load all tempura data
+
+
+df = pd.read_csv("data_whole.tsv", sep='\t') #compile_data_medium.py output
+df1 = df
+
+
+
+
+#convert pipeline 5 otu id to pieline 4.1 otu
+#df.loc[df.pipeline == 5, 'OTU_ID'] = tempura_otu_df.loc[tempura_otu_df.OTU_id_5==df["OTU_ID"].values[0], 'OTU_id_4_1'].values[0]
+
+
+
+
+
+
+
+df = df.set_index(["OTU_ID"]) #set OTU col as the index
+df.sort_index(inplace=True) #sort dataframe based on increasing index values
 
 df.index.unique("OTU_ID") #unique OTU ID indices from the appended_df
 df.groupby(level="OTU_ID").size() #count data samples per OTU, pandas series output
@@ -68,6 +85,21 @@ ax.tick_params(axis='x', rotation=90)
 ##############################################################################
 
 len(list(set(df.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id"))))
+df.loc[df.pipeline == 4.1].index.unique("OTU_ID")
+tempura_otu_df.OTU_id_4_1
+
+#len(list(set(df.loc[df.pipeline == 4.1].index.unique("OTU_ID") & set(tempura_otu_df.index.unique("OTU_id"))))
+
+
+#for otu in df.index.unique("OTU_ID"):
+#    if df.loc[OTU_nr, :].pipeline.values[0] == 4.1:
+        
+
+
+
+
+
+
 
 def tempura_and_prediction(OTU_nr):
     plt.figure()
@@ -100,6 +132,9 @@ tempura_tmax = tempura_otu_df["Tmax"] #when a table with all TEMPURA data is use
 tempura_tmin = tempura_otu_df["Tmin"]
 tempura_topt = tempura_otu_df["Topt_ave"]
 tempura_ratio = (tempura_topt - tempura_tmin) /(tempura_tmax - tempura_tmin)
+del tempura_tmax
+del tempura_tmin
+del tempura_topt
 
 tempura_ratio.plot(kind='hist', bins=12,rwidth=0.9,color='#658b38', title = "TEMPURA mean ratio " \
                    + str("{:.5f}".format(tempura_ratio.mean()))+ " with std "+\
@@ -125,16 +160,41 @@ OTU_size.plot(kind='hist', bins=20, rwidth=0.9, color='#014d4e', \
 plt.xlabel("observation nr")
 plt.show()
 ###############################################################################
-temp_df = pd.DataFrame(columns=('OTU_ID', 'Tmin', 'Topt', 'Tmax', 'temp_Tmin', 'temp_Topt','temp_Tmax',))
+
+cols = ['OTU_ID', 'Tmin', 'Topt', 'Tmax']
+temps_df = []
 for otu in df.index.unique("OTU_ID"):
-    optimum_est = min(df.loc[199, :].temp) + (max(df.loc[199, :].temp) - min(df.loc[199, :].temp)) *0.66
-    temps_est = [max(df.loc[199, :].temp), optimum_est, max(df.loc[199, :].temp)]
+    optimum_est = min(df.loc[otu, :].temp) + (max(df.loc[otu, :].temp) - min(df.loc[otu, :].temp)) *0.66
+    temps_est = [otu, min(df.loc[otu, :].temp), optimum_est, max(df.loc[otu, :].temp)]
+    temps_df.append(temps_est)
+
+temps_df = pd.DataFrame(temps_df, columns=cols)
+temps_df = temps_df.set_index(["OTU_ID"]) #set OTU col as the index
+temps_df.sort_index(inplace=True) #sort dataframe based on increasing index values
+temps_df["temp_Tmin"] = ""
+temps_df["temp_Topt"] = ""
+temps_df["temp_Tmax"] = ""
+
+tempura_matches = list(set(df.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id")))
+
+for otu in tempura_matches:
+    temps_df.loc[otu,'temp_Tmin':'temp_Tmax'] = tempura_otu_df.loc[otu,'Tmin':'Tmax'].values
     
+regression = temps_df.loc[tempura_matches]
+regression["temp_Tmin"] = regression["temp_Tmin"].astype(float, errors = 'raise')
+regression["temp_Topt"] = regression["temp_Topt"].astype(float, errors = 'raise')
+regression["temp_Tmax"] = regression["temp_Tmax"].astype(float, errors = 'raise')
 
-
-
-
-
-
-
+#from sklearn.model_selection import train_test_split 
+#from sklearn.linear_model import LinearRegression
+#from sklearn import metrics
+from sklearn.linear_model import LinearRegression
+X = regression.Topt.values.reshape(-1, 1)
+Y = regression.temp_Topt.values.reshape(-1, 1)
+linear_regressor = LinearRegression()  # create object for the class
+linear_regressor.fit(X, Y)  # perform linear regression
+Y_pred = linear_regressor.predict(X)  # make predictions
+plt.scatter(X, Y)
+plt.plot(X, Y_pred, color='red')
+plt.show()
 

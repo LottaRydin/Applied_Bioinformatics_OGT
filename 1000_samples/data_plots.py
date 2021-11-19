@@ -157,38 +157,30 @@ temps_compare = temps_pred.loc[tempura_matches]
 temps_compare = temps_compare.reindex(columns=['Tmin', 'Topt', 'Tmax', 'temp_Tmin', 'temp_Topt', 'temp_Tmax'])
 temps_compare.loc[:,'temp_Tmin':'temp_Tmax'] = tempura_otu_df.loc[temps_compare.index,'Tmin':'Tmax'].values
 
-
-#from sklearn.model_selection import train_test_split 
-#from sklearn.linear_model import LinearRegression
-#from sklearn import metrics
 from sklearn.linear_model import LinearRegression
-X = temps_compare.Topt.values.reshape(-1, 1)
-Y = temps_compare.temp_Topt.values.reshape(-1, 1)
-linear_regressor = LinearRegression()  # create object for the class
-linear_regressor.fit(X, Y)  # perform linear regression
-Y_pred = linear_regressor.predict(X)  # make predictions
-plt.scatter(X, Y)
-plt.plot(X, Y_pred, color='red')
-plt.show()
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
 
-X = temps_compare.Tmin.values.reshape(-1, 1)
-Y = temps_compare.temp_Tmin.values.reshape(-1, 1)
-linear_regressor = LinearRegression()  # create object for the class
-linear_regressor.fit(X, Y)  # perform linear regression
-Y_pred = linear_regressor.predict(X)  # make predictions
-plt.scatter(X, Y)
-plt.plot(X, Y_pred, color='red')
-plt.show()
+def regression_plot(x, y):
+    X = x.values.reshape(-1, 1)
+    Y = y.values.reshape(-1, 1)
+    linear_regressor = LinearRegression()  # create object for the class
+    linear_regressor.fit(X, Y)  # perform linear regression
+    Y_pred = linear_regressor.predict(X)  # make predictions
+    plt.scatter(X, Y)
+    plt.plot(X, Y_pred, color='grey')
+    mse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=True)
+    rmse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=False)
+    r_sq = r2_score(Y, Y_pred)
+    plt.figtext(0.15,0.8, "RMSE: "+str("{:.3f}".format(rmse))+\
+        "\n"+"{}\u00b2".format("R")+": "+str("{:.3f}".format(r_sq)))
+    plt.xlabel("predicted " + x.name)
+    plt.ylabel("TEMPURA " + x.name)
+    plt.show()
 
-X = temps_compare.Tmax.values.reshape(-1, 1)
-Y = temps_compare.temp_Tmax.values.reshape(-1, 1)
-linear_regressor = LinearRegression()  # create object for the class
-linear_regressor.fit(X, Y)  # perform linear regression
-Y_pred = linear_regressor.predict(X)  # make predictions
-plt.scatter(X, Y)
-plt.plot(X, Y_pred, color='red')
-plt.show()
+regression_plot(temps_compare.Topt, temps_compare.temp_Topt)
+regression_plot(temps_compare.Tmin, temps_compare.temp_Tmin)
+regression_plot(temps_compare.Tmax, temps_compare.temp_Tmax)
 
 
 
-    

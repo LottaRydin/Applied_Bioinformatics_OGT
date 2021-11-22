@@ -46,6 +46,9 @@ translated_multi_v2 = translated_multi[['OTU_id','taxonomy','OTU_id_4_1','OTU_id
 
 translated_multi_v2
 
+#Writes the matched table to a .tsv file
+translated_multi_v2.to_csv('both_pipes.tsv', sep='\t', index=False)
+
 #Reads in the TEMPURA database
 tempura = pd.read_csv("TEMPURA.csv")
 

@@ -5,6 +5,9 @@ import numpy as np
 import seaborn as sns
 import random
 from collections import Counter
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
 
 ##load data
 os.chdir(os.path.dirname(os.path.realpath(__file__))) #set current dir to script location
@@ -66,16 +69,16 @@ Counter(df.groupby(level="OTU_ID").size().tolist()) #how many OTUs have 1 data p
 # 
 ##############################################################################
 #seaborn violin plot
-plot_df = []
+violin_df = []
 rand_otu = random.sample(df.index.unique("OTU_ID").tolist(), 10) #pick 10 random otu ids
 for indx in rand_otu:
     df_otu = df.loc[indx, :]
-    plot_df.append(df_otu)
+    violin_df.append(df_otu)
 
-plot_df = pd.concat(plot_df)
-plot_df.reset_index(inplace=True)
+violin_df = pd.concat(violin_df)
+violin_df.reset_index(inplace=True)
 
-ax = sns.violinplot(x="taxonomy", y="temp", data=plot_df, scale="count", inner="stick") #If count, the width of the violins will be scaled by the number of observations in that bin. 
+ax = sns.violinplot(x="taxonomy", y="temp", data=violin_df, scale="count", inner="stick") #If count, the width of the violins will be scaled by the number of observations in that bin. 
 ax.tick_params(axis='x', rotation=90)
 
 ##############################################################################
@@ -123,7 +126,7 @@ plt.show()
 ###############################################################################
 #some summary histograms
 df.groupby(level="OTU_ID").size().plot(kind='hist', bins=30, rwidth=0.9, color='#014d4e', \
-              title = "Number of observations of OTU" ) #df.groupby(level="OTU_ID")
+              title = "Number of observations per OTU" ) #df.groupby(level="OTU_ID")
 plt.xlabel("observation nr")
 plt.show()
 
@@ -157,38 +160,43 @@ temps_compare = temps_pred.loc[tempura_matches]
 temps_compare = temps_compare.reindex(columns=['Tmin', 'Topt', 'Tmax', 'temp_Tmin', 'temp_Topt', 'temp_Tmax'])
 temps_compare.loc[:,'temp_Tmin':'temp_Tmax'] = tempura_otu_df.loc[temps_compare.index,'Tmin':'Tmax'].values
 
+def regression_plot(x, y, xlab, ylab, title):
+    X = x.values.reshape(-1, 1)
+    Y = y.values.reshape(-1, 1)
+    linear_regressor = LinearRegression()  # create object for the class
+    linear_regressor.fit(X, Y)  # perform linear regression
+    Y_pred = linear_regressor.predict(X)  # make predictions
+    plt.scatter(X, Y)
+    plt.plot(X, Y_pred, color='grey')
+#    mse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=True)
+    rmse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=False)
+    r_sq = r2_score(Y, Y_pred)
+    plt.figtext(0.15,0.8, "RMSE: "+str("{:.3f}".format(rmse))+\
+        "\n"+"{}\u00b2".format("R")+": "+str("{:.3f}".format(r_sq)))
+    plt.title(title)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    plt.show()
 
-#from sklearn.model_selection import train_test_split 
-#from sklearn.linear_model import LinearRegression
-#from sklearn import metrics
-from sklearn.linear_model import LinearRegression
-X = temps_compare.Topt.values.reshape(-1, 1)
-Y = temps_compare.temp_Topt.values.reshape(-1, 1)
-linear_regressor = LinearRegression()  # create object for the class
-linear_regressor.fit(X, Y)  # perform linear regression
-Y_pred = linear_regressor.predict(X)  # make predictions
-plt.scatter(X, Y)
-plt.plot(X, Y_pred, color='red')
-plt.show()
+regression_plot(temps_compare.temp_Topt, temps_compare.Topt, "TEMPURA Topt", "predicted Topt", "Topt prediction")
+regression_plot(temps_compare.Topt, temps_compare.temp_Topt, "prediction Topt", "TEMPURA Topt", "Topt prediction")
 
-X = temps_compare.Tmin.values.reshape(-1, 1)
-Y = temps_compare.temp_Tmin.values.reshape(-1, 1)
-linear_regressor = LinearRegression()  # create object for the class
-linear_regressor.fit(X, Y)  # perform linear regression
-Y_pred = linear_regressor.predict(X)  # make predictions
-plt.scatter(X, Y)
-plt.plot(X, Y_pred, color='red')
-plt.show()
+regression_plot(temps_compare.temp_Tmin, temps_compare.Tmin, "TEMPURA Tmin", "predicted Tmin", "Tmin prediction")
+regression_plot(temps_compare.temp_Tmax, temps_compare.Tmax, "TEMPURA Tmax", "predicted Tmax", "Tmax prediction")
 
-X = temps_compare.Tmax.values.reshape(-1, 1)
-Y = temps_compare.temp_Tmax.values.reshape(-1, 1)
-linear_regressor = LinearRegression()  # create object for the class
-linear_regressor.fit(X, Y)  # perform linear regression
-Y_pred = linear_regressor.predict(X)  # make predictions
-plt.scatter(X, Y)
-plt.plot(X, Y_pred, color='red')
-plt.show()
+regression_plot(tempura.Tmin, tempura.Tmax, "TEMPURA Tmin", "TEMPURA Tmax", "TEMPURA")
+regression_plot(temps_pred.Tmin, temps_pred.Tmax, "prediction Tmin", "prediction Tmax", "Prediction")
+
+regression_plot(tempura.Tmin, tempura.Topt_ave, "TEMPURA Tmin", "TEMPURA Topt", "TEMPURA")
+regression_plot(temps_pred.Tmin, temps_pred.Topt, "prediction Tmin", "prediction Topt", "Prediction")
+
+###############################################################################
+#comparing viable temperture ranges
+regression_plot(temps_compare.temp_Tmax-temps_compare.temp_Tmin,\
+                temps_compare.Tmax-temps_compare.Tmin, \
+                    "TEMPURA Tmax-Tmin", "prediction Tmax-Tmin", "Compare temperature ranges")
 
 
 
-    
+
+

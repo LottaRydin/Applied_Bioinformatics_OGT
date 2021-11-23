@@ -29,6 +29,7 @@ temp_df = pandas.DataFrame(columns=['sample_accession', 'temperature', 'envirome
 # Extracting infor from MGnify:
 with Session(API_BASE) as session:
     count = 0
+    add_count = 0
     params = {
         'metadata_key': 'temperature', # Filter for temperature data
     }
@@ -36,9 +37,12 @@ with Session(API_BASE) as session:
     f = Filter(urlencode(params)) # Create filter
 
     # Iterating through samples from salt marshes (enviroment) with temperature data availible
-    for sample in session.iterate('biomes/root:Environmental:Aquatic:Marine:Coastal/samples', f): #biomes/root:Environmental:Aquatic:Marine:Intermediate Zone/samples
-        if count == 1000:
+    for sample in session.iterate('biomes/root:Environmental:Aquatic:Marine/samples', f): #biomes/root:Environmental:Aquatic:Marine:Intermediate Zone/samples
+        if count == 1200 or add_count == 1000:
+            print(f'FINAL: Explored: {count}, downloaded: {add_count}')
             break
+        elif add_count%50 == 0:
+            print(f'Explored: {count}, downloaded: {add_count}')
         count += 1
         #print("sample:", sample.accession, ", count: ", count)
     # if True:
@@ -67,7 +71,7 @@ with Session(API_BASE) as session:
                 # Backup if keys are wrong. Done once per sample and takes first analysis.
                 if run.analyses[0].pipeline_version in ['4.1', '5.0'] and not backup_exists:
                     backup_analysis = run.analyses[0].accession
-                    backup_instrument_platform = run.instrument_platform
+                    backup_instrument_platform = run.analyses[0].instrument_platform
                     backup_pipeline_v = run.analyses[0].pipeline_version
                     backup_exists = True
 
@@ -82,16 +86,16 @@ with Session(API_BASE) as session:
                                     best_run_val = int(e['value'])
                                     best_analysis = analysis.accession
                                     pipeline_v = '4.1'
-                                    instrument_platform = run.instrument_platform
+                                    instrument_platform = analysis.instrument_platform
                             elif analysis.pipeline_version == '5.0':
                                 if int(e['value']) >= best_run_val and (pipeline_v == None or pipeline_v == '5.0'):
                                     best_run = run.accession
                                     best_run_val = int(e['value'])
                                     best_analysis = analysis.accession
                                     pipeline_v = '5.0'
-                                    instrument_platform = run.instrument_platform
+                                    instrument_platform = analysis.instrument_platform
             #else:
-               # print("------------------NOT A GOOD PIPELINE/EXP TYPE---------------------")
+                #print("------------------NOT A GOOD PIPELINE/EXP TYPE---------------------")
             
         #print(f"best run: {best_run}, {best_run_val} in analysis: {best_analysis}")
 
@@ -139,6 +143,7 @@ with Session(API_BASE) as session:
                 # elif meta['key'] == 'environment (material)':
                 #     env = meta['value'] 
             temp_df = temp_df.append({'sample_accession': sample.accession, 'temperature': tmp, 'enviroment': env, 'sequencing_platform': instrument_platform, 'pipeline_version': pipeline_v, 'analysis_accession': ANALYSIS_ACCESSION }, ignore_index=True)
+            add_count += 1
 temp_df.to_csv('temp_samples.tsv', sep='\t')
 
             

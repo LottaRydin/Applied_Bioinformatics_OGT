@@ -111,6 +111,7 @@ with Session(API_BASE) as session:
                         #print("------------------NOT A GOOD PIPELINE/EXP TYPE---------------------")
             except (requests.exceptions.SSLError, requests.exceptions.ConnectionError):
                 print(f'Connection error when retrieving information about sample. Attempt: {attempt}, Sample: {sample.accession}')
+                time.sleep(5)
                 if attempt == max_attempts:
                     print(f'Maximum attempts for retrieving information about sample reached. {sample.accession} added to excess file')
                     #add file
@@ -173,6 +174,7 @@ with Session(API_BASE) as session:
                     #print("DOWNLOAD FINISHED")
                 except (requests.exceptions.SSLError, requests.exceptions.ConnectionError):
                     print(f'Connection error when dowloading TSV file for sample. Attempt: {attempt}, Analysis: {ANALYSIS_ACCESSION}')
+                    time.sleep(5)
                     if attempt == max_attempts:
                         print(f'Maximum attempts for dowloading TSV file for sample reached. {ANALYSIS_ACCESSION} added to excess file')
                         analysis_error = analysis_error.append({'analysis_accession': ANALYSIS_ACCESSION }, ignore_index=True)

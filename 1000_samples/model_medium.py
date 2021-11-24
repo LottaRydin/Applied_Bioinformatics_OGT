@@ -2,9 +2,6 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
-import random
-from collections import Counter
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
@@ -13,12 +10,11 @@ from sklearn.metrics import r2_score
 os.chdir(os.path.dirname(os.path.realpath(__file__))) #set current dir to script location
 tempura_otu_df = pd.read_csv("matched_temp_multi.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id"])
-tempura = pd.read_csv("TEMPURA.csv") #load entire tempura db
-metadata = pd.read_csv('temp_samples.tsv', sep='\t') #specify metadata file
-metadata = metadata.drop(columns=['Unnamed: 0']) #drop unnecessary col
 pipeline_map = pd.read_csv('both_pipes.tsv', sep='\t')
-df = pd.read_csv("data_whole.tsv", sep='\t') #compile_data_medium.py output
 
+df = pd.read_csv("data_whole.tsv", sep='\t') #compile_data_medium.py output
+#filter out eukaryotes
+df = df[~df.taxonomy.str.contains("Eukaryota")]
 ## converting v5 otu id to v4.1
 #which v5 otu not in pipeline_map, remove this data
 list_1 = pipeline_map.OTU_id_5.tolist() #all v5 otu id in map file
@@ -31,70 +27,116 @@ df.loc[df.pipeline == 5, 'OTU_ID'] = df['OTU_ID'].map(otu_dict) #in rows where p
 df["OTU_ID"] = df["OTU_ID"].astype(int, errors = 'raise')
 df = df.set_index(["OTU_ID"]) #set OTU col as the index
 df.sort_index(inplace=True) #sort dataframe based on increasing index values
-##fitering
-#filter out eukaryotes
-df = df[~df.taxonomy.str.contains("Eukaryota")]
-
-#Filter for number of samples per OTU
-df = df[df.abundance > 1] #drop sample with less that 3 reads
-#filter out OTUs with less than 10 observations
-OTU_size = df.groupby(level="OTU_ID").size()
-df = df.drop(OTU_size.index[OTU_size < 10].tolist())
 del list_1
 del list_2
 del otu_dict
 del missing_v5_id
-del OTU_size
-
-cols = ['OTU_ID', 'Tmin', 'Topt', 'Tmax']
-temps_pred = []
-for otu in df.index.unique("OTU_ID"):
-    optimum_est = min(df.loc[otu, :].temp) + (max(df.loc[otu, :].temp) - min(df.loc[otu, :].temp)) *0.66
-    temps_est = [otu, min(df.loc[otu, :].temp), optimum_est, max(df.loc[otu, :].temp)]
-    temps_pred.append(temps_est)
-
-temps_pred = pd.DataFrame(temps_pred, columns=cols)
-del cols
-del temps_est
-del otu
-del optimum_est
-temps_pred = temps_pred.set_index(["OTU_ID"]) #set OTU col as the index
-temps_pred.sort_index(inplace=True) #sort dataframe based on increasing index values
-
-tempura_matches = list(set(df.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id")))
-temps_compare = temps_pred.loc[tempura_matches]
-temps_compare = temps_compare.reindex(columns=['Tmin', 'Topt', 'Tmax', 'temp_Tmin', 'temp_Topt', 'temp_Tmax'])
-temps_compare.loc[:,'temp_Tmin':'temp_Tmax'] = tempura_otu_df.loc[temps_compare.index,'Tmin':'Tmax'].values
-del tempura_matches
+del pipeline_map
 ###############################################################################
 
+#'Tmin', 'Topt', 'Tmax', 'TEMP_Tmin', 'TEMP_Topt', 'TEMP_Tmax' are the columns, index starts from 0
+def regression_filter_plot(x_col_nr, y_col_nr, min_read, min_samp, ratio):
+            #Filter for number of samples per OTU
+            df_filt = df[df.abundance > min_read] #drop sample with less that 3 reads
+            #filter out OTUs with less than 10 observations
+            OTU_size = df_filt.groupby(level="OTU_ID").size()
+            df_filt = df_filt.drop(OTU_size.index[OTU_size < min_samp].tolist())
+            tempura_matches = list(set(df_filt.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id")))
+            cols = ['OTU_ID', 'Tmin', 'Topt', 'Tmax']
+            temps_pred = []
+            for otu in tempura_matches:
+                optimum_est = min(df_filt.loc[otu, :].temp) + (max(df_filt.loc[otu, :].temp) - min(df_filt.loc[otu, :].temp)) * ratio
+                temps_est = [otu, min(df_filt.loc[otu, :].temp), optimum_est, max(df_filt.loc[otu, :].temp)]
+                temps_pred.append(temps_est)
+            temps_pred = pd.DataFrame(temps_pred, columns=cols)
+            temps_pred = temps_pred.set_index(["OTU_ID"]) #set OTU col as the index
+            temps_pred = temps_pred.reindex(columns=['Tmin', 'Topt', 'Tmax', 'TEMP_Tmin', 'TEMP_Topt', 'TEMP_Tmax'])
+            temps_pred.loc[:,'TEMP_Tmin':'TEMP_Tmax'] = tempura_otu_df.loc[temps_pred.index,'Tmin':'Tmax'].values
+            X = temps_pred.iloc[:,x_col_nr].values.reshape(-1, 1)
+            Y = temps_pred.iloc[:,y_col_nr].values.reshape(-1, 1)
+            linear_regressor = LinearRegression()  # create object for the class
+            linear_regressor.fit(X, Y)  # perform linear regression
+            Y_pred = linear_regressor.predict(X)  # make predictions
+            plt.scatter(X, Y, )
+            plt.plot(X, Y_pred, color='grey')
+            rmse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=False)
+            r_sq = r2_score(Y, Y_pred)
+            plt.figtext(0.15,0.7, "RMSE: "+str("{:.3f}".format(rmse))+\
+                "\n"+"{}\u00b2".format("R")+": "+str("{:.3f}".format(r_sq))+"\n"+\
+                    "y-intercept: "+ str("{:.3f}".format(linear_regressor.intercept_[0]))+"\n"+\
+                        "slope: " + str("{:.3f}".format(linear_regressor.coef_[0][0])))
+            plt.show()
 
-def regression_plot(x, y, xlab, ylab, title):
+regression_filter_plot(4, 1, 6, 25, .65)
+
+def regression_stats(x, y):
     X = x.values.reshape(-1, 1)
     Y = y.values.reshape(-1, 1)
     linear_regressor = LinearRegression()  # create object for the class
     linear_regressor.fit(X, Y)  # perform linear regression
     Y_pred = linear_regressor.predict(X)  # make predictions
-    plt.scatter(X, Y)
-    plt.plot(X, Y_pred, color='grey')
-#    mse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=True)
     rmse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=False)
     r_sq = r2_score(Y, Y_pred)
-    plt.figtext(0.15,0.8, "RMSE: "+str("{:.3f}".format(rmse))+\
-        "\n"+"{}\u00b2".format("R")+": "+str("{:.3f}".format(r_sq)))
-    plt.title(title)
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
-    plt.show()
-    print("y-intercept "+ str(linear_regressor.intercept_))
-    print("slope " + str(linear_regressor.coef_))
+    return([r_sq, rmse, linear_regressor.intercept_[0],linear_regressor.coef_[0][0], \
+             len(df_filt.index.unique("OTU_ID")), len(list(set(df_filt.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id"))))])
 
-regression_plot(temps_compare.temp_Topt, temps_compare.Topt, "TEMPURA Topt", "predicted Topt", "Topt prediction")
-regression_plot(temps_compare.temp_Tmin, temps_compare.Tmin, "TEMPURA Tmin", "predicted Tmin", "Tmin prediction")
-regression_plot(temps_compare.temp_Tmax, temps_compare.Tmax, "TEMPURA Tmax", "predicted Tmax", "Tmax prediction")
+max_opt = []
+min_opt = []
+for min_read in list(range(1, 11)):
+    for min_sampl_nr in list(range(2, 50)):
+            #Filter for number of samples per OTU
+            df_filt = df[df.abundance > min_read] #drop sample with less that 3 reads
+            #filter out OTUs with less than 10 observations
+            OTU_size = df_filt.groupby(level="OTU_ID").size()
+            df_filt = df_filt.drop(OTU_size.index[OTU_size < min_sampl_nr].tolist())
+            tempura_matches = list(set(df_filt.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id")))
+            cols = ['OTU_ID', 'Tmin', 'Topt', 'Tmax']
+            temps_pred = []
+            for otu in tempura_matches:
+                optimum_est = min(df_filt.loc[otu, :].temp) + (max(df_filt.loc[otu, :].temp) - min(df_filt.loc[otu, :].temp)) * 0.6
+                temps_est = [otu, min(df_filt.loc[otu, :].temp), optimum_est, max(df_filt.loc[otu, :].temp)]
+                temps_pred.append(temps_est)
+            temps_pred = pd.DataFrame(temps_pred, columns=cols)
+            temps_pred = temps_pred.set_index(["OTU_ID"]) #set OTU col as the index
+            temps_pred = temps_pred.reindex(columns=['Tmin', 'Topt', 'Tmax', 'TEMP_Tmin', 'TEMP_Topt', 'TEMP_Tmax'])
+            temps_pred.loc[:,'TEMP_Tmin':'TEMP_Tmax'] = tempura_otu_df.loc[temps_pred.index,'Tmin':'Tmax'].values
+            loop_values_max = [min_read, min_sampl_nr]
+            loop_values_min = [min_read, min_sampl_nr]
+            loop_values_max.extend(regression_stats(temps_pred.TEMP_Tmax, temps_pred.Tmax))
+            loop_values_min.extend(regression_stats(temps_pred.TEMP_Tmin, temps_pred.Tmin))
+            max_opt.append(loop_values_max)
+            min_opt.append(loop_values_min)
+cols = ['min_reads', 'min_sampl_nr', 'r_sq', 'rmse', "y_intercept", "slope", "OTU_nr", "TEMPURA_matches"]
+max_opt = pd.DataFrame(max_opt, columns=cols)
+min_opt = pd.DataFrame(min_opt, columns=cols)
 
-#https://stats.stackexchange.com/questions/214886/regression-what-is-the-utility-of-r-squared-compared-to-rmse
+opt_opt = []
+for min_read in list(range(1, 11)):
+    for min_sampl_nr in list(range(2, 50)):
+        for ratio in list(np.arange(0, 1.05, 0.05)):
+            #Filter for number of samples per OTU
+            df_filt = df[df.abundance > min_read] #drop sample with less that 3 reads
+            #filter out OTUs with less than 10 observations
+            OTU_size = df_filt.groupby(level="OTU_ID").size()
+            df_filt = df_filt.drop(OTU_size.index[OTU_size < min_sampl_nr].tolist())
+            tempura_matches = list(set(df_filt.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id")))
+            cols = ['OTU_ID', 'Tmin', 'Topt', 'Tmax']
+            temps_pred = []
+            for otu in tempura_matches:
+                optimum_est = min(df_filt.loc[otu, :].temp) + (max(df_filt.loc[otu, :].temp) - min(df_filt.loc[otu, :].temp)) * ratio
+                temps_est = [otu, min(df_filt.loc[otu, :].temp), optimum_est, max(df_filt.loc[otu, :].temp)]
+                temps_pred.append(temps_est)
+            temps_pred = pd.DataFrame(temps_pred, columns=cols)
+            temps_pred = temps_pred.set_index(["OTU_ID"]) #set OTU col as the index
+            temps_pred = temps_pred.reindex(columns=['Tmin', 'Topt', 'Tmax', 'TEMP_Tmin', 'TEMP_Topt', 'TEMP_Tmax'])
+            temps_pred.loc[:,'TEMP_Tmin':'TEMP_Tmax'] = tempura_otu_df.loc[temps_pred.index,'Tmin':'Tmax'].values
+            loop_values = [min_read, min_sampl_nr, ratio]
+            loop_values.extend(regression_stats(temps_pred.TEMP_Topt, temps_pred.Topt))
+            opt_opt.append(loop_values)
+cols = ['min_reads', 'min_sampl_nr', 'ratio','r_sq', 'rmse', "y_intercept", "slope", "OTU_nr", "TEMPURA_matches"]
+opt_opt = pd.DataFrame(opt_opt, columns=cols)
 
-
-
+# max_opt.to_csv("max_opt.tsv", sep='\t')
+# min_opt.to_csv("min_opt.tsv", sep='\t')
+# opt_opt.to_csv("opt_opt.tsv", sep='\t')
 

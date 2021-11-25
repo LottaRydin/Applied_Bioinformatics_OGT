@@ -11,7 +11,7 @@ from sklearn.metrics import r2_score
 
 ##load data
 os.chdir(os.path.dirname(os.path.realpath(__file__))) #set current dir to script location
-tempura_otu_df = pd.read_csv("matched_temp_multi_v2.tsv", sep='\t')
+tempura_otu_df = pd.read_csv("matched_temp_multi.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id"])
 tempura = pd.read_csv("TEMPURA.csv") #load entire tempura db
 metadata = pd.read_csv('temp_samples.tsv', sep='\t') #specify metadata file
@@ -38,8 +38,10 @@ del otu_dict
 ##fitering
 #filter out eukaryotes
 df = df[~df.taxonomy.str.contains("Eukaryota")]
+
+
 #Filter for number of samples per OTU
-#df.drop(df[df["abundance"] < 3].index, inplace = True) #drop sample with less that 3 reads
+#df = df[df.abundance > 3] #drop sample with less that 3 reads
 #filter out OTUs with less than 10 observations
 OTU_size = df.groupby(level="OTU_ID").size()
 df = df.drop(OTU_size.index[OTU_size < 10].tolist())
@@ -179,8 +181,6 @@ def regression_plot(x, y, xlab, ylab, title):
     plt.show()
 
 regression_plot(temps_compare.temp_Topt, temps_compare.Topt, "TEMPURA Topt", "predicted Topt", "Topt prediction")
-regression_plot(temps_compare.Topt, temps_compare.temp_Topt, "prediction Topt", "TEMPURA Topt", "Topt prediction")
-
 regression_plot(temps_compare.temp_Tmin, temps_compare.Tmin, "TEMPURA Tmin", "predicted Tmin", "Tmin prediction")
 regression_plot(temps_compare.temp_Tmax, temps_compare.Tmax, "TEMPURA Tmax", "predicted Tmax", "Tmax prediction")
 

@@ -8,6 +8,16 @@ from sklearn.metrics import r2_score
 
 ##load data
 os.chdir(os.path.dirname(os.path.realpath(__file__))) #set current dir to script location
+
+#script can generate these files from line 91 (tables which show how regresion coeff 
+#changes using different filtering values), can take 10 min to make them so can load if you already have it
+# opt_top = pd.read_csv("opt_opt.tsv", sep='\t')
+# opt_top = opt_top.drop(columns=['Unnamed: 0']) #drop unnecessary col
+# max_top = pd.read_csv("max_opt.tsv", sep='\t')
+# max_top = max_top.drop(columns=['Unnamed: 0']) #drop unnecessary col
+# min_top = pd.read_csv("min_opt.tsv", sep='\t')
+# min_top = min_top.drop(columns=['Unnamed: 0']) #drop unnecessary col
+
 tempura_otu_df = pd.read_csv("matched_temp_multi.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id"])
 pipeline_map = pd.read_csv('both_pipes.tsv', sep='\t')
@@ -33,9 +43,9 @@ del otu_dict
 del missing_v5_id
 del pipeline_map
 ###############################################################################
-
-#'Tmin', 'Topt', 'Tmax', 'TEMP_Tmin', 'TEMP_Topt', 'TEMP_Tmax' are the columns, index starts from 0
-def regression_filter_plot(x_col_nr, y_col_nr, min_read, min_samp, ratio):
+#plot regression for data filtered using different parameters
+#type_T: "opt", "min", "max"
+def regression_filter_plot(type_T, min_read, min_samp, ratio):
             #Filter for number of samples per OTU
             df_filt = df[df.abundance > min_read] #drop sample with less that 3 reads
             #filter out OTUs with less than 10 observations
@@ -52,23 +62,34 @@ def regression_filter_plot(x_col_nr, y_col_nr, min_read, min_samp, ratio):
             temps_pred = temps_pred.set_index(["OTU_ID"]) #set OTU col as the index
             temps_pred = temps_pred.reindex(columns=['Tmin', 'Topt', 'Tmax', 'TEMP_Tmin', 'TEMP_Topt', 'TEMP_Tmax'])
             temps_pred.loc[:,'TEMP_Tmin':'TEMP_Tmax'] = tempura_otu_df.loc[temps_pred.index,'Tmin':'Tmax'].values
-            X = temps_pred.iloc[:,x_col_nr].values.reshape(-1, 1)
-            Y = temps_pred.iloc[:,y_col_nr].values.reshape(-1, 1)
+            col_dict = {"opt":[4, 1], "min":[3, 0], "max":[5, 2]}
+            X = temps_pred.iloc[:,col_dict[type_T][0]].values.reshape(-1, 1)
+            Y = temps_pred.iloc[:,col_dict[type_T][1]].values.reshape(-1, 1)
             linear_regressor = LinearRegression()  # create object for the class
             linear_regressor.fit(X, Y)  # perform linear regression
             Y_pred = linear_regressor.predict(X)  # make predictions
             plt.scatter(X, Y, )
             plt.plot(X, Y_pred, color='grey')
+            plt.plot()
+            plt.plot([min([min(X), min(Y)]), max(X)], [min([min(X), min(Y)]), max(X)], color = 'black', linestyle='dashed')
             rmse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=False)
             r_sq = r2_score(Y, Y_pred)
-            plt.figtext(0.15,0.7, "RMSE: "+str("{:.3f}".format(rmse))+\
+            plt.figtext(0.28,0.73,"RMSE: "+str("{:.3f}".format(rmse))+\
                 "\n"+"{}\u00b2".format("R")+": "+str("{:.3f}".format(r_sq))+"\n"+\
                     "y-intercept: "+ str("{:.3f}".format(linear_regressor.intercept_[0]))+"\n"+\
-                        "slope: " + str("{:.3f}".format(linear_regressor.coef_[0][0])))
+                        "slope: " + str("{:.3f}".format(linear_regressor.coef_[0][0])), size = "small")
+            ax = plt.gca()
+            ax.set_aspect('equal')
+            plt.title("T"+type_T)
+            plt.ylabel("prediction")
+            plt.xlabel("TEMPURA")            
             plt.show()
 
-regression_filter_plot(4, 1, 6, 25, .65)
+regression_filter_plot("opt", 7, 10, .9) #opt
+regression_filter_plot("min", 7, 10, .9) #min
+regression_filter_plot("max", 7, 10, .9) #max
 
+#function which returns regression stats given x and y inputs
 def regression_stats(x, y):
     X = x.values.reshape(-1, 1)
     Y = y.values.reshape(-1, 1)
@@ -80,6 +101,9 @@ def regression_stats(x, y):
     return([r_sq, rmse, linear_regressor.intercept_[0],linear_regressor.coef_[0][0], \
              len(df_filt.index.unique("OTU_ID")), len(list(set(df_filt.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id"))))])
 
+#two big loops below generate 3 data frames whih describe how regression stats change 
+#when you filter data using different parameters. After you generate them you can
+#save them as tsv files to use later as they take a long time to generate
 max_opt = []
 min_opt = []
 for min_read in list(range(1, 11)):
@@ -136,7 +160,7 @@ for min_read in list(range(1, 11)):
 cols = ['min_reads', 'min_sampl_nr', 'ratio','r_sq', 'rmse', "y_intercept", "slope", "OTU_nr", "TEMPURA_matches"]
 opt_opt = pd.DataFrame(opt_opt, columns=cols)
 
-# max_opt.to_csv("max_opt.tsv", sep='\t')
-# min_opt.to_csv("min_opt.tsv", sep='\t')
-# opt_opt.to_csv("opt_opt.tsv", sep='\t')
+max_opt.to_csv("max_opt.tsv", sep='\t')
+min_opt.to_csv("min_opt.tsv", sep='\t')
+opt_opt.to_csv("opt_opt.tsv", sep='\t')
 

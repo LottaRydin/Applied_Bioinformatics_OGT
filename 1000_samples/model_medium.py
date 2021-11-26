@@ -11,12 +11,12 @@ os.chdir(os.path.dirname(os.path.realpath(__file__))) #set current dir to script
 
 #script can generate these files from line 91 (tables which show how regresion coeff 
 #changes using different filtering values), can take 10 min to make them so can load if you already have it
-# opt_top = pd.read_csv("opt_opt.tsv", sep='\t')
-# opt_top = opt_top.drop(columns=['Unnamed: 0']) #drop unnecessary col
-# max_top = pd.read_csv("max_opt.tsv", sep='\t')
-# max_top = max_top.drop(columns=['Unnamed: 0']) #drop unnecessary col
-# min_top = pd.read_csv("min_opt.tsv", sep='\t')
-# min_top = min_top.drop(columns=['Unnamed: 0']) #drop unnecessary col
+opt_opt = pd.read_csv("opt_opt.tsv", sep='\t')
+opt_opt = opt_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
+max_opt = pd.read_csv("max_opt.tsv", sep='\t')
+max_opt = max_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
+min_opt = pd.read_csv("min_opt.tsv", sep='\t')
+min_opt = min_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
 
 tempura_otu_df = pd.read_csv("matched_temp_multi.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id"])
@@ -45,7 +45,7 @@ del pipeline_map
 ###############################################################################
 #plot regression for data filtered using different parameters
 #type_T: "opt", "min", "max"
-def regression_filter_plot(type_T, min_read, min_samp, ratio):
+def regression_filter_plot(type_T, min_read, min_samp, ratio, xy_transform = False):
             #Filter for number of samples per OTU
             df_filt = df[df.abundance > min_read] #drop sample with less that 3 reads
             #filter out OTUs with less than 10 observations
@@ -63,15 +63,25 @@ def regression_filter_plot(type_T, min_read, min_samp, ratio):
             temps_pred = temps_pred.reindex(columns=['Tmin', 'Topt', 'Tmax', 'TEMP_Tmin', 'TEMP_Topt', 'TEMP_Tmax'])
             temps_pred.loc[:,'TEMP_Tmin':'TEMP_Tmax'] = tempura_otu_df.loc[temps_pred.index,'Tmin':'Tmax'].values
             col_dict = {"opt":[4, 1], "min":[3, 0], "max":[5, 2]}
+            if xy_transform == False:
+                a = 1; b = 0
+            else:
+                X = temps_pred.iloc[:,col_dict[type_T][0]].values.reshape(-1, 1)
+                Y = temps_pred.iloc[:,col_dict[type_T][1]].values.reshape(-1, 1)
+                linear_regressor = LinearRegression()  # create object for the class
+                linear_regressor.fit(X, Y)  # perform linear regression
+                Y_pred = linear_regressor.predict(X)  # make predictions
+                a = linear_regressor.coef_[0][0]; b = linear_regressor.intercept_[0]
             X = temps_pred.iloc[:,col_dict[type_T][0]].values.reshape(-1, 1)
-            Y = temps_pred.iloc[:,col_dict[type_T][1]].values.reshape(-1, 1)
+            Y = ((temps_pred.iloc[:,col_dict[type_T][1]]-b)/a).values.reshape(-1, 1)
             linear_regressor = LinearRegression()  # create object for the class
             linear_regressor.fit(X, Y)  # perform linear regression
             Y_pred = linear_regressor.predict(X)  # make predictions
             plt.scatter(X, Y, )
             plt.plot(X, Y_pred, color='grey')
             plt.plot()
-            plt.plot([min([min(X), min(Y)]), max(X)], [min([min(X), min(Y)]), max(X)], color = 'black', linestyle='dashed')
+            plt.plot([min([min(X), min(Y)]), max(max(X), max(Y))],\
+                     [min([min(X), min(Y)]),max(max(X), max(Y))], color = 'black', linestyle='dashed')
             rmse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=False)
             r_sq = r2_score(Y, Y_pred)
             plt.figtext(0.28,0.73,"RMSE: "+str("{:.3f}".format(rmse))+\
@@ -85,9 +95,10 @@ def regression_filter_plot(type_T, min_read, min_samp, ratio):
             plt.xlabel("TEMPURA")            
             plt.show()
 
-regression_filter_plot("opt", 7, 10, .9) #opt
+regression_filter_plot("opt", 5, 5, 1, xy_transform=False) #opt
+regression_filter_plot("opt", 5, 5, 1, xy_transform=True) #opt
 regression_filter_plot("min", 7, 10, .9) #min
-regression_filter_plot("max", 7, 10, .9) #max
+regression_filter_plot("max", 2, 16, .9, xy_transform=True) #max
 
 #function which returns regression stats given x and y inputs
 def regression_stats(x, y):

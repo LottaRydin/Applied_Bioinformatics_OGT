@@ -47,13 +47,13 @@ with Session(API_BASE) as session:
     try:
         for sample in session.iterate('biomes/root:Environmental/samples', f): #biomes/root:Environmental:Aquatic:Marine:Intermediate Zone/samples
         #for sample in sample_list:
-            if count == 40 or add_count == 20:
+            if count == 20000 or add_count == 20000:
                 print(f'FINAL: Explored: {count}, downloaded: {add_count}')
                 break
             elif add_count%50 == 0:
                 print(f'Explored: {count}, downloaded: {add_count}')
             count += 1
-            print("sample:", sample.accession, ", count: ", count)
+            #print("sample:", sample.accession, ", count: ", count)
         # if True:
         #     sample = session.get('samples', "SRS373032").resource    
 

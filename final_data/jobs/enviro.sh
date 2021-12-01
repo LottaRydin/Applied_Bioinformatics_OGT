@@ -3,7 +3,7 @@
 #SBATCH -p core
 #SBATCH -n 1
 #SBATCH -t 60:00:00
-#SBATCH -J test_job
+#SBATCH -J enviro_job
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user lotta.rydin@telia.com
 

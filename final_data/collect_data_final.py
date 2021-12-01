@@ -45,7 +45,7 @@ with Session(API_BASE) as session:
     
     # Iterating through samples from salt marshes (enviroment) with temperature data availible
     try:
-        for sample in session.iterate('biomes/root:Environmental/samples', f): #biomes/root:Environmental:Aquatic:Marine:Intermediate Zone/samples
+        for sample in session.iterate('biomes/root:Engineered/samples', f): #biomes/root:Environmental:Aquatic:Marine:Intermediate Zone/samples
         #for sample in sample_list:
             if count == 20000 or add_count == 20000:
                 print(f'FINAL: Explored: {count}, downloaded: {add_count}')

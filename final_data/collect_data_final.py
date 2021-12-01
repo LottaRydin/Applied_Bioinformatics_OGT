@@ -28,6 +28,7 @@ if not os.path.exists("tsv_files"):
 temp_df = pandas.DataFrame(columns=['sample_accession', 'temperature', 'enviroment', 'sequencing_platform', 'pipeline_version', 'analysis_accession'])
 samples_error = pandas.DataFrame(columns=['sample_accession'])
 analysis_error = pandas.DataFrame(columns=['analysis_accession'])
+backup_record = pandas.DataFrame(columns=['sample_accession'])
 
 # Extracting infor from MGnify:
 with Session(API_BASE) as session:
@@ -132,6 +133,7 @@ with Session(API_BASE) as session:
                     ANALYSIS_ACCESSION = best_analysis 
                 else:
                     ANALYSIS_ACCESSION = backup_analysis
+                    backup_record = backup_record.append({'sample_accession': sample.accession})
                     print('******BACKUP USED*******')
                 
                 
@@ -188,6 +190,8 @@ with Session(API_BASE) as session:
         temp_df.to_csv('temp_samples.tsv', sep='\t')
         samples_error.to_csv('samples_not_included', sep='\t')
         analysis_error.to_csv('analyses_not_downloaded', sep='\t')
+        backup_record.to_csv('backups', sep='\t')
 temp_df.to_csv('temp_samples.tsv', sep='\t')
 samples_error.to_csv('samples_not_included', sep='\t')
 analysis_error.to_csv('analyses_not_downloaded', sep='\t')
+backup_record.to_csv('backups', sep='\t')

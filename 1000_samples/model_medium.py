@@ -9,14 +9,14 @@ from sklearn.metrics import r2_score
 ##load data
 os.chdir(os.path.dirname(os.path.realpath(__file__))) #set current dir to script location
 
-#script can generate these files from line 91 (tables which show how regresion coeff 
-#changes using different filtering values), can take 10 min to make them so can load if you already have it
-opt_opt = pd.read_csv("opt_opt.tsv", sep='\t')
-opt_opt = opt_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
-max_opt = pd.read_csv("max_opt.tsv", sep='\t')
-max_opt = max_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
-min_opt = pd.read_csv("min_opt.tsv", sep='\t')
-min_opt = min_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
+#script can generate these files from line 100 (tables which show how regresion coeff 
+#changes using different filtering values), can take 10 min to generate them so can load if you already have it
+#opt_opt = pd.read_csv("opt_opt.tsv", sep='\t')
+#opt_opt = opt_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
+#max_opt = pd.read_csv("max_opt.tsv", sep='\t')
+#max_opt = max_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
+#min_opt = pd.read_csv("min_opt.tsv", sep='\t')
+#min_opt = min_opt.drop(columns=['Unnamed: 0']) #drop unnecessary col
 
 tempura_otu_df = pd.read_csv("matched_temp_multi.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id"])
@@ -37,14 +37,11 @@ df.loc[df.pipeline == 5, 'OTU_ID'] = df['OTU_ID'].map(otu_dict) #in rows where p
 df["OTU_ID"] = df["OTU_ID"].astype(int, errors = 'raise')
 df = df.set_index(["OTU_ID"]) #set OTU col as the index
 df.sort_index(inplace=True) #sort dataframe based on increasing index values
-del list_1
-del list_2
-del otu_dict
-del missing_v5_id
-del pipeline_map
+
 ###############################################################################
-#plot regression for data filtered using different parameters
-#type_T: "opt", "min", "max"
+#plot regression for Topt, Tmin or Tmax with data filtered using different parameters
+#type_T: "opt", "min", "max", xy_transform if you want the regression to use raw MGnify values (False, default)
+#or regression where MGnify values are transformed so regression intercept is 0 and slope is 1 (True)
 def regression_filter_plot(type_T, min_read, min_samp, ratio, xy_transform = False):
             #Filter for number of samples per OTU
             df_filt = df[df.abundance > min_read] #drop sample with less that 3 reads
@@ -100,6 +97,9 @@ regression_filter_plot("opt", 5, 5, 1, xy_transform=True) #opt
 regression_filter_plot("min", 7, 10, .9) #min
 regression_filter_plot("max", 2, 16, .9, xy_transform=True) #max
 
+###############################################################################
+##generate tables which show how regression statistics change when filtering parameter are varied
+#only need to run once on the data and save tables, they take about 10 min to generate for 1400 samples
 #function which returns regression stats given x and y inputs
 def regression_stats(x, y):
     X = x.values.reshape(-1, 1)
@@ -174,4 +174,3 @@ opt_opt = pd.DataFrame(opt_opt, columns=cols)
 max_opt.to_csv("max_opt.tsv", sep='\t')
 min_opt.to_csv("min_opt.tsv", sep='\t')
 opt_opt.to_csv("opt_opt.tsv", sep='\t')
-

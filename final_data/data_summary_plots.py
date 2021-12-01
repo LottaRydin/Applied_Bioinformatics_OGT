@@ -11,12 +11,12 @@ from sklearn.metrics import r2_score
 ##load data
 df = pd.read_csv("data_whole.tsv", sep='\t') #compile_data_medium.py output
 df = df.set_index(["OTU_ID"]) #set OTU col as the index
+metadata = pd.read_csv('temp_samples.tsv', sep='\t') #specify metadata file
+metadata = metadata.drop(columns=['Unnamed: 0']) #drop unnecessary col
 
 tempura_otu_df = pd.read_csv("matched_temp_multi.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id_5"])
 tempura = pd.read_csv("TEMPURA.csv") #load entire tempura db
-metadata = pd.read_csv('temp_samples.tsv', sep='\t') #specify metadata file
-metadata = metadata.drop(columns=['Unnamed: 0']) #drop unnecessary col
 
 ##set filters
 read_nr = 2

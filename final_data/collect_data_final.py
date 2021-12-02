@@ -46,7 +46,7 @@ with Session(API_BASE) as session:
     
     # Iterating through samples from salt marshes (enviroment) with temperature data availible
     try:
-        for sample in session.iterate('biomes/root:Host-associated/samples', f): #biomes/root:Environmental:Aquatic:Marine:Intermediate Zone/samples
+        for sample in session.iterate('biomes/root:engineered/samples', f): #biomes/root:Environmental:Aquatic:Marine:Intermediate Zone/samples
         #for sample in sample_list:
             if count == 20000 or add_count == 20000:
                 print(f'FINAL: Explored: {count}, downloaded: {add_count}')
@@ -54,7 +54,7 @@ with Session(API_BASE) as session:
             elif add_count%50 == 0:
                 print(f'Explored: {count}, downloaded: {add_count}')
             count += 1
-            #print("sample:", sample.accession, ", count: ", count)
+            print("sample:", sample.accession, ", count: ", count)
         # if True:
         #     sample = session.get('samples', "SRS373032").resource    
 
@@ -75,7 +75,7 @@ with Session(API_BASE) as session:
             for attempt in range(1, max_attempts+1):
                 try:   
                     for run in sample.runs:
-                        #print("run acc: ", run.accession, "pipeline: ", [p.release_version for p in run.pipelines], "experiment type: ", run.experiment_type)
+                        print("run acc: ", run.accession, "pipeline: ", [p.release_version for p in run.pipelines], "experiment type: ", run.experiment_type)
                         try:
                             pipelines_used = [p.release_version for p in run.pipelines]
                         except requests.exceptions.SSLError:
@@ -139,7 +139,7 @@ with Session(API_BASE) as session:
                 
                 for attempt in range(1, max_attempts+1):
                     try:
-                        #print("DOWNLOAD")
+                        print("DOWNLOAD")
                         #time.sleep(5)
                         analysis = session.get(RESOURCE, ANALYSIS_ACCESSION).resource
 
@@ -195,3 +195,4 @@ temp_df.to_csv('temp_samples.tsv', sep='\t')
 samples_error.to_csv('samples_not_included', sep='\t')
 analysis_error.to_csv('analyses_not_downloaded', sep='\t')
 backup_record.to_csv('backups', sep='\t')
+print(f'FINAL: Explored: {count}, downloaded: {add_count}')

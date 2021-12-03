@@ -9,14 +9,14 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
 ##load data
-df = pd.read_csv("data_whole.tsv", sep='\t') #compile_data_medium.py output
+df = pd.read_csv("/crex/proj/snic2021-23-617/work/02_compile_data/engineered/data_whole.tsv", sep='\t') #compile_data_medium.py output
 df = df.set_index(["OTU_ID"]) #set OTU col as the index
-metadata = pd.read_csv('temp_samples.tsv', sep='\t') #specify metadata file
+metadata = pd.read_csv('/crex/proj/snic2021-23-617/work/01_convert_biom_to_tsv/engineered/temp_samples.tsv', sep='\t') #specify metadata file
 metadata = metadata.drop(columns=['Unnamed: 0']) #drop unnecessary col
 
-tempura_otu_df = pd.read_csv("matched_temp_multi.tsv", sep='\t')
+tempura_otu_df = pd.read_csv("/crex/proj/snic2021-23-617/raw_data/tempura/matched_temp_multi.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id_5"])
-tempura = pd.read_csv("TEMPURA.csv") #load entire tempura db
+tempura = pd.read_csv("/crex/proj/snic2021-23-617/raw_data/tempura/TEMPURA.csv") #load entire tempura db
 
 ##set filters
 read_nr = 2
@@ -26,6 +26,9 @@ ratio = 0.5
 df = df[df.temp < 110]
 df = df[df.temp > -21]
 df = df[~df.taxonomy.str.contains("Eukaryota")]
+
+metadata = metadata[metadata.temperature < 110]
+metadata = metadata[metadata.temperature > -21]
 
 #Filter for number of samples per OTU
 df = df[df.abundance > read_nr] #drop sample with less that 3 reads
@@ -69,7 +72,7 @@ print("Out of", len(df.index.unique("OTU_ID")),"OTUs present in MGnify data", \
       len(list(set(df.index.unique("OTU_ID")) & set(tempura_otu_df.index.unique("OTU_id_5")))), "were present in TEMPURA" )
 
 rand_otu = random.sample(list(set(df.index.unique("OTU_ID")) & \
-                              set(tempura_otu_df.index.unique("OTU_id_5"))), 5) #pick random ots which have data also in tempura
+                              set(tempura_otu_df.index.unique("OTU_id_5"))), 4) #pick random ots which have data also in tempura
 for otu in rand_otu:
     tempura_and_prediction(otu)
  

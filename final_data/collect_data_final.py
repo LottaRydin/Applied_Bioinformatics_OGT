@@ -133,7 +133,7 @@ with Session(API_BASE) as session:
                     ANALYSIS_ACCESSION = best_analysis 
                 else:
                     ANALYSIS_ACCESSION = backup_analysis
-                    backup_record = backup_record.append({'sample_accession': sample.accession})
+                    backup_record = backup_record.append({'sample_accession': ANALYSIS_ACCESSION})
                     print('******BACKUP USED*******')
                 
                 

@@ -4,8 +4,8 @@ import pandas as pd
 #the location of the script should also contain tsv_files/ folder with MGnify tsv
 #files (files converted using biom_to_tsv.sh) and temp_samples.tsv metadata file
 
-data_dir = "/crex/proj/snic2021-23-617/work/01_convert_biom_to_tsv/host-associated/tsv_files/" #tsv sample files' directory
-metadata = pd.read_csv('/crex/proj/snic2021-23-617/work/01_convert_biom_to_tsv/host-associated/temp_samples.tsv', sep='\t') #specify metadata file
+data_dir = "/crex/proj/snic2021-23-617/work/01_convert_biom_to_tsv/mixed/tsv_files/" #tsv sample files' directory
+metadata = pd.read_csv('/crex/proj/snic2021-23-617/work/01_convert_biom_to_tsv/mixed/temp_samples.tsv', sep='\t') #specify metadata file
 metadata = metadata.drop(columns=['Unnamed: 0']) #drop unnecessary col
 pipeline_map = pd.read_csv('/crex/proj/snic2021-23-617/work/02_compile_data/both_pipes.tsv', sep='\t')
    

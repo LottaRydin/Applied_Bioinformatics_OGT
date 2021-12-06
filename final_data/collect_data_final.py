@@ -81,7 +81,7 @@ with Session(API_BASE) as session:
                         except requests.exceptions.SSLError:
                             print('Error rad 68!')
             
-                        if ('4.1' in pipelines_used or '5.0' in pipelines_used) and run.experiment_type == 'amplicon':
+                        if ('4.1' in pipelines_used or '5.0' in pipelines_used) and run.experiment_type == 'metagenomic':
 
                             # Backup if keys are wrong. Done once per sample and takes first analysis.
                             if run.analyses[0].pipeline_version in ['4.1', '5.0'] and not backup_exists:
@@ -155,7 +155,7 @@ with Session(API_BASE) as session:
                                 # if os.path.exists(output_file):
                                 #     #print("Already downloaded: " + download.alias)
                                 #     continue
-                                print("Downloading: " + download.alias)
+                                #print("Downloading: " + download.alias)
                                 
                                 with requests.get(download.links.self) as response:
                                     response.raise_for_status()

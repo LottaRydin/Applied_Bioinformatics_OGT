@@ -53,8 +53,8 @@ def regression_filter_plot(type_T, min_read, min_samp, ratio, xy_transform = Fal
             plt.scatter(X, Y, )
             plt.plot(X, Y_pred, color='grey')
             plt.plot()
-            plt.plot([min([min(X), min(Y)]), 120],\
-                     [min([min(X), min(Y)]),120], color = 'black', linestyle='dashed')
+            plt.plot([min([min(X), min(Y)])-15, max([max(X), max(Y)])+10],\
+                     [min([min(X), min(Y)])-15,max([max(X), max(Y)])+10], color = 'black', linestyle='dashed')
             rmse = mean_squared_error(y_true=Y, y_pred=Y_pred, squared=False)
             r_sq = r2_score(Y, Y_pred)
             plt.figtext(0.28,0.73,"RMSE: "+str("{:.3f}".format(rmse))+\
@@ -68,15 +68,14 @@ def regression_filter_plot(type_T, min_read, min_samp, ratio, xy_transform = Fal
             plt.xlabel("TEMPURA")  
             plt.savefig("T"+type_T+".png")
             plt.show()
-#            print("OTUs plotted", list(set(df_filt.index.unique("OTU_ID")) &\
-#                                       set(tempura_otu_df.index.unique("OTU_id_5"))), "for", type_T, "regression")
-            print("OTUs plotted", len(list(set(df_filt.index.unique("OTU_ID")))))
+            print(len(list(set(df_filt.index.unique("OTU_ID")) &\
+                                       set(tempura_otu_df.index.unique("OTU_id_5")))),"OTUs plotted",  "for", type_T, "regression")
+#            print("OTUs plotted", len(list(set(df_filt.index.unique("OTU_ID")))))
                                        
-regression_filter_plot("opt", 7, 48, .25, xy_transform=False) #opt
-regression_filter_plot("opt", 7, 48, .25, xy_transform=True) #opt
-regression_filter_plot("min", 7, 48, .25) #min
-regression_filter_plot("min", 7, 48, .25, xy_transform=True) #min
-regression_filter_plot("max", 7, 48, .25) #max
-regression_filter_plot("max", 7, 48, .25, xy_transform=True) #max
+regression_filter_plot("opt", 6, 25, .35, xy_transform=False) #opt
+regression_filter_plot("min", 6, 25, .35) #min
+regression_filter_plot("max", 6, 25, .35) #max
 
+#if you want the transformed plot, set xy_transform=True (default in False)
+#regression_filter_plot("opt", 6, 25, .35, xy_transform=True) #opt
 

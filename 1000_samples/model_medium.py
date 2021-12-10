@@ -174,4 +174,3 @@ opt_opt = pd.DataFrame(opt_opt, columns=cols)
 max_opt.to_csv("max_opt.tsv", sep='\t')
 min_opt.to_csv("min_opt.tsv", sep='\t')
 opt_opt.to_csv("opt_opt.tsv", sep='\t')
-

@@ -13,9 +13,9 @@ df = pd.read_csv("data_whole_combined.tsv", sep='\t') #compile_data_medium.py ou
 
 # Parameters
 p_ratio = 0.25
-p_min_samp = 48
-p_min_read = 7
-p_z_cutoff = 1
+p_min_samp = 22
+p_min_read = 9
+p_z_cutoff = 2
 
 df = df[df.temp < 110]
 df = df[df.temp > -21]

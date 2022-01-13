@@ -16,7 +16,7 @@ min_samples = 5
 ratio = .55
 min_z = 0.5
 max_z = 0.5
-
+transform = True
 ##load data
 tempura_otu_df = pd.read_csv("matched_temp_multi.tsv", sep='\t')
 tempura_otu_df = tempura_otu_df.set_index(["OTU_id_5"])
@@ -242,11 +242,11 @@ def leave_1_out(df, type_T, min_read, min_samp, ratio, min_z, max_z, xy_transfor
     plt.hist(rmse_all, bins=40)
     plt.show()
 
-regression_filter_plot_original("opt", min_reads, min_samples, ratio, min_z, max_z, xy_transform=True) #opt
-leave_1_out(df, "opt", min_reads, min_samples, ratio, min_z, max_z, xy_transform=True) #opt
+regression_filter_plot_original("opt", min_reads, min_samples, ratio, min_z, max_z, xy_transform=transform) #opt
+leave_1_out(df, "opt", min_reads, min_samples, ratio, min_z, max_z, xy_transform=transform) #opt
 
-regression_filter_plot_original("min", min_reads, min_samples, ratio, min_z, max_z, xy_transform=True) #opt
-leave_1_out(df, "min", min_reads, min_samples, ratio, min_z, max_z, xy_transform=True) #opt
+regression_filter_plot_original("min", min_reads, min_samples, ratio, min_z, max_z, xy_transform=transform) #opt
+leave_1_out(df, "min", min_reads, min_samples, ratio, min_z, max_z, xy_transform=transform) #opt
 
-regression_filter_plot_original("max", min_reads, min_samples, ratio, min_z, max_z, xy_transform=True) #opt
-leave_1_out(df, "max", min_reads, min_samples, ratio, min_z, max_z, xy_transform=True) #opt
+regression_filter_plot_original("max", min_reads, min_samples, ratio, min_z, max_z, xy_transform=transform) #opt
+leave_1_out(df, "max", min_reads, min_samples, ratio, min_z, max_z, xy_transform=transform) #opt
